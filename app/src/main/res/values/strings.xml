@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">nsbmTravelMate</string>
+
+    <!--User Registration page-->
+    <string name="user_email">e-mail</string>
+    <string name="user_password">password</string>
 </resources>
