@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,50 +17,51 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
-import com.google.firebase.auth.FirebaseAuthUserCollisionException;
-import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "MainActivity";
-    private Button SignUpButton;
-    private TextView LoginPageLink;
+    private static final String TAG = "LoginActivity";
+    private Button LoginButton;
+    private TextView SignUpPageLink;
     private EditText UserEmail;
     private EditText UserPassword;
     private ProgressDialog progressDialog;
     private FirebaseAuth firebaseAuth;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_login);
 
         firebaseAuth = FirebaseAuth.getInstance();
-        LoginPageLink = findViewById(R.id.login_page_link);
-        LoginPageLink.setOnClickListener(this);
-        SignUpButton = findViewById(R.id.sign_up_button);
-        SignUpButton.setOnClickListener(this);
+        if(firebaseAuth.getCurrentUser() != null){
+            finish();
+            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+
+        }
+
+        SignUpPageLink = findViewById(R.id.sign_up_page_link);
+        SignUpPageLink.setOnClickListener(this);
+        LoginButton = findViewById(R.id.login_button);
+        LoginButton.setOnClickListener(this);
         UserEmail = findViewById(R.id.user_email);
         UserPassword = findViewById(R.id.user_password);
         progressDialog = new ProgressDialog(this);
-
-
 
     }
 
     @Override
     public void onClick(View view) {
 
-        if(view == SignUpButton){
+        if(view == LoginButton){
 
             registerUser();
 
         }
-        if (view == LoginPageLink){
 
-            startActivity(new Intent(getApplicationContext(), LoginActivity.class));
+        if (view == SignUpPageLink){
+
+            startActivity(new Intent(getApplicationContext(), MainActivity.class));
 
         }
 
@@ -82,31 +82,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
-        progressDialog.setMessage("Registering User...");
+        progressDialog.setMessage("Logging In User...");
         progressDialog.show();
 
-        firebaseAuth.createUserWithEmailAndPassword(email, password)
+        firebaseAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
 
                         try {
+                            if (task.isSuccessful()) {
+                                finish();
+                                startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+                            }
 
-                        if(task.isSuccessful()){
-                            progressDialog.dismiss();
-                            Toast.makeText(MainActivity.this, "User registerd" + task.getResult().toString(), Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(getApplicationContext(), LoginActivity.class));
-                        } else {
-                            progressDialog.dismiss();
-                            Toast.makeText(MainActivity.this, "User registration failed" + task.getResult().toString(), Toast.LENGTH_SHORT).show();
+                            throw task.getException();
                         }
 
-                        throw task.getException();
-
-                        } catch(Exception e) {
-                            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        catch(Exception e) {
+                            Toast.makeText(LoginActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                             Log.e(TAG, e.getMessage());
                         }
+
                     }
                 });
 

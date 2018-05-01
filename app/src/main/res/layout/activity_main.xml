@@ -36,6 +36,12 @@
         android:text="Sign Up"
         android:layout_margin="5dp"/>
 
+    <TextView
+        android:id="@+id/login_page_link"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Login" />
+
     </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>
