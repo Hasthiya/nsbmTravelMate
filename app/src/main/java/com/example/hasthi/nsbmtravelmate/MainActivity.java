@@ -39,6 +39,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         firebaseAuth = FirebaseAuth.getInstance();
+        if(firebaseAuth.getCurrentUser() != null){
+            finish();
+            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+
+        }
         LoginPageLink = findViewById(R.id.login_page_link);
         LoginPageLink.setOnClickListener(this);
         SignUpButton = findViewById(R.id.sign_up_button);
