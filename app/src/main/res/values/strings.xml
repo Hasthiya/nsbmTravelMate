@@ -4,4 +4,6 @@
     <!--User Registration page-->
     <string name="user_email">e-mail</string>
     <string name="user_password">password</string>
+    <string name="title_activity_driver_maps">DriverMap</string>
+    <string name="title_activity_student_maps">StudentMap</string>
 </resources>
