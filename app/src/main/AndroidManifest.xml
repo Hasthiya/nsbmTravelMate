@@ -20,6 +20,7 @@
         </activity>
         <activity android:name=".LoginActivity" />
         <activity android:name=".BusFinderActivity"></activity>
+        <activity android:name=".DriverLoginActivity"></activity>
     </application>
 
 </manifest>

@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = "MainActivity";
     private Button SignUpButton;
     private TextView LoginPageLink;
+    private TextView DriverPageLink;
     private EditText UserEmail;
     private EditText UserPassword;
     private ProgressDialog progressDialog;
@@ -51,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         UserEmail = findViewById(R.id.user_email);
         UserPassword = findViewById(R.id.user_password);
         progressDialog = new ProgressDialog(this);
+        DriverPageLink = findViewById(R.id.driver_login_page_link);
+        DriverPageLink.setOnClickListener(this);
 
 
 
@@ -68,6 +71,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             startActivity(new Intent(getApplicationContext(), LoginActivity.class));
 
+        }
+        if (view == DriverPageLink){
+            startActivity(new Intent(getApplicationContext(), DriverLoginActivity.class));
         }
 
     }

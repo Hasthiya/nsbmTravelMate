@@ -44,4 +44,13 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/driver_login_page_link"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Login as a Driver"
+        android:padding="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
 </android.support.constraint.ConstraintLayout>
