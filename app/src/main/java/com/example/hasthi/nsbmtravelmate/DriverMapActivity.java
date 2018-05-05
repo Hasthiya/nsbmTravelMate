@@ -133,8 +133,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                selectedTrip = trips.get(i);
-                updateRouteInfo();
+                if (i > 0) {
+                    selectedTrip = trips.get(i - 1);
+                    updateRouteInfo();
+                }
             }
 
             @Override
@@ -203,6 +205,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private void updateSpinner() {
         List<String> spinnerArray = new ArrayList<>();
 
+        spinnerArray.add("Select A Route");
+
         for (int x = 0; x < trips.size(); x++) {
             spinnerArray.add(trips.get(x).getKey());
         }
@@ -214,6 +218,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private void startTrip() {
         tripButton.setText(R.string.stop_trip_button);
         isTripStarted = true;
+        spinner.setVisibility(View.INVISIBLE);
 
         startMapActivity();
         loadRouteInMap();
@@ -223,6 +228,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private void stopTrip() {
         isTripStarted = false;
         tripButton.setText(R.string.start_trip_button);
+        spinner.setVisibility(View.VISIBLE);
+        spinner.setSelection(0);
 
         clearMap();
         cancelBackgroundTasks();
