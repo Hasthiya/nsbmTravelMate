@@ -8,12 +8,18 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class DriverLoginActivity extends AppCompatActivity {
 
@@ -22,7 +28,6 @@ public class DriverLoginActivity extends AppCompatActivity {
     private EditText emailEditText, passwordEditText;
 
     private FirebaseAuth mAuth;
-    private FirebaseAuth.AuthStateListener firebaseAuthListner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +44,6 @@ public class DriverLoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO Validation
                 final String email = emailEditText.getText().toString().trim();
                 final String password = passwordEditText.getText().toString().trim();
 
@@ -47,9 +51,9 @@ public class DriverLoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (!task.isSuccessful()) {
-                            Log.wtf(TAG,"Login Failed");
+                            onSigninFailed(task.getException().getMessage());
                         } else {
-                            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", mAuth.getCurrentUser().getUid()));
+                            onSigninSuccess();
                         }
                     }
                 });
@@ -62,16 +66,38 @@ public class DriverLoginActivity extends AppCompatActivity {
         if (user != null) {
             startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", user.getUid()));
         }
-//        firebaseAuthListner = new FirebaseAuth.AuthStateListener() {
-//            @Override
-//            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-//                FirebaseUser user = firebaseAuth.getCurrentUser();
-//                if (user != null) {
-//                    startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", user.getUid()));
-//                    finish();
-//                }
-//            }
-//        };
+    }
+
+    private void onSigninSuccess() {
+        String key = mAuth.getCurrentUser().getUid();
+
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(key);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Long userType = dataSnapshot.child("user_type").getValue(Long.class);
+                onUserTypeReceived(userType);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                onSigninFailed(databaseError.getMessage());
+            }
+        });
+    }
+
+    private void onSigninFailed(String message) {
+        Toast.makeText(DriverLoginActivity.this, message, Toast.LENGTH_SHORT).show();
+        Log.e(TAG, message);
+    }
+
+    private void onUserTypeReceived(long type) {
+        if (type == 2) {
+            finish();
+            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", mAuth.getCurrentUser().getUid()));
+        } else {
+            onSigninFailed("Invalid User");
+        }
     }
 
     @Override
