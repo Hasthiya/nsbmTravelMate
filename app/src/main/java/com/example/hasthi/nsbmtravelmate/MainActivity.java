@@ -56,7 +56,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         user = dataSnapshot.getValue(User.class);
                         if (user.getUserType() == 2) {
                             finish();
-                            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
+                            Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
                         }
                     }
                 }
@@ -137,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             user.setUserType(2);
                             DatabaseReference current_student_db = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUserID());
                             current_student_db.setValue(user);
+                            finish();
                             startActivity(new Intent(getApplicationContext(), LoginActivity.class));
                         } else {
                             progressDialog.dismiss();

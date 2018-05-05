@@ -54,7 +54,9 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                         user = dataSnapshot.getValue(User.class);
                         if (user.getUserType() == 2) {
                             finish();
-                            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
+                            Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
                         }
                     }
                 }
@@ -121,7 +123,9 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                         try {
                             if (task.isSuccessful()) {
                                 finish();
-                                startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
+                                Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
                             }
 
                             throw task.getException();
