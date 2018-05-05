@@ -16,8 +16,14 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.widget.Toast;
 import android.widget.Toolbar;
 
+import com.directions.route.AbstractRouting;
+import com.directions.route.Route;
+import com.directions.route.RouteException;
+import com.directions.route.Routing;
+import com.directions.route.RoutingListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
@@ -26,8 +32,12 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -41,9 +51,10 @@ import java.util.List;
 
 import models.LatLang;
 import models.RouteInfo;
+import models.Trip;
 import models.User;
 
-public class BusLocationsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+public class BusLocationsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener, RoutingListener {
 
     private GoogleMap mMap;
     GoogleApiClient mGoogleApiClient;
@@ -53,11 +64,17 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
     private ActionBarDrawerToggle mToggle;
     private android.support.v7.widget.Toolbar mToolbar;
     private DatabaseReference mRouteDatabase;
+    private DatabaseReference mTimeTableDatabase;
     private RouteInfo routeInfo;
     private MarkerOptions options;
     private ArrayList<LatLang> latlngs;
+    private ArrayList<Trip> trips;
     final int LOCATION_REQUEST_CODE = 1;
+    Marker busMarker = null;
     private boolean cameraMoved = false;
+
+    private List<Polyline> polylines;
+    private static final int[] COLORS = new int[]{R.color.route_color};
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -76,6 +93,8 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
 
         mToolbar = findViewById(R.id.nav_action_bar);
         setSupportActionBar(mToolbar);
+
+        polylines = new ArrayList<>();
 
         mDrawerLayout = findViewById(R.id.drawer_layout);
         mToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.open, R.string.close );
@@ -141,7 +160,8 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
                     }
 
                     for (LatLang point : latlngs) {
-                        mMap.addMarker(new MarkerOptions().position(new LatLng(point.getLatitude(), point.getLongitude())));
+                       busMarker = mMap.addMarker(new MarkerOptions().position(new LatLng(point.getLatitude(), point.getLongitude())));
+                       busMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.ic_directions_bus_black_24dp));
                     }
 
                 }
@@ -154,6 +174,48 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
         };
         mRouteDatabase.addValueEventListener(postListener);
 
+        trips = new ArrayList<>();
+
+        mTimeTableDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
+        ValueEventListener postListener2 = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.exists()) {
+
+                    erasePolyLines();
+
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        Trip trip = snapshot.getValue(Trip.class);
+                        if (trip != null) {
+                            trips.add(trip);
+                            if(trip.getTrip_starting_point() != null && trip.getTrip_ending_point() != null) {
+                                getRouteToMarker(trip.getTrip_starting_point().toLatLng(), trip.getTrip_ending_point().toLatLng());
+                            }
+                        }
+
+
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mTimeTableDatabase.addValueEventListener(postListener2);
+
+    }
+
+    private void getRouteToMarker(LatLng startLatLng, LatLng endLatLng) {
+        Routing routing = new Routing.Builder()
+                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .withListener(this)
+                .alternativeRoutes(false)
+                .waypoints(endLatLng, startLatLng)
+                .build();
+        routing.execute();
     }
 
     private void logout() {
@@ -251,5 +313,55 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
         }
     }
 
+
+    @Override
+    public void onRoutingFailure(RouteException e) {
+
+        if(e != null){
+            Toast.makeText(this, "Error: " +e.getMessage(), Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Something when wrong, Try again", Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+    @Override
+    public void onRoutingStart() {
+
+    }
+
+    @Override
+    public void onRoutingSuccess(ArrayList<Route> route, int shortestRouteIndex) {
+
+        polylines = new ArrayList<>();
+        //add route(s) to the map.
+        for (int i = 0; i <route.size(); i++) {
+
+            //In case of more than 5 alternative routes
+            int colorIndex = i % COLORS.length;
+
+            PolylineOptions polyOptions = new PolylineOptions();
+            polyOptions.color(getResources().getColor(COLORS[colorIndex]));
+            polyOptions.width(10 + i * 3);
+            polyOptions.addAll(route.get(i).getPoints());
+            Polyline polyline = mMap.addPolyline(polyOptions);
+            polylines.add(polyline);
+
+//            Toast.makeText(getApplicationContext(),"Route "+ (i+1) +": distance - "+ route.get(i).getDistanceValue()+": duration - "+ route.get(i).getDurationValue(),Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    @Override
+    public void onRoutingCancelled() {
+
+    }
+
+    private void erasePolyLines(){
+        for(Polyline line: polylines){
+            line.remove();
+        }
+        polylines.clear();
+    }
 
 }

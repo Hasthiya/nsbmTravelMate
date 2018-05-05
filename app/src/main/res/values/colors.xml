@@ -6,4 +6,6 @@
     <color name="navigation_header_text_color">#ffffff</color>
 
     <color name="transparent">#00ffffff</color>
+
+    <color name="route_color">#f95f0c</color>
 </resources>
