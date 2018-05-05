@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,13 +17,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
-import com.google.firebase.auth.FirebaseAuthUserCollisionException;
-import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
-import models.Student;
+import models.User;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -36,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private EditText UserPassword;
     private ProgressDialog progressDialog;
     private FirebaseAuth firebaseAuth;
-    public Student student;
+    public User user = User.getInstance();
 
 
     @Override
@@ -44,12 +43,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        student = Student.getInstance();
-
         firebaseAuth = FirebaseAuth.getInstance();
         if(firebaseAuth.getCurrentUser() != null){
-            finish();
-            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+
+            user.setUserID(firebaseAuth.getCurrentUser().getUid());
+            DatabaseReference current_user = FirebaseDatabase.getInstance().getReference().child("users").child(firebaseAuth.getCurrentUser().getUid());
+
+            ValueEventListener postListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if(dataSnapshot.exists()) {
+                        user = dataSnapshot.getValue(User.class);
+                        if (user.getUserType() == 2) {
+                            finish();
+                            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
+            current_user.addValueEventListener(postListener);
 
         }
         LoginPageLink = findViewById(R.id.login_page_link);
@@ -88,12 +105,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void registerUser() {
 
         String email = UserEmail.getText().toString().trim();
-        student.setEmail(email);
         String password = UserPassword.getText().toString().trim();
 
         if(TextUtils.isEmpty(email)){
             UserEmail.setError("Email is Empty");
             return;
+        } else {
+            user.setEmail(email);
         }
 
         if(TextUtils.isEmpty(password)){
@@ -115,9 +133,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             progressDialog.dismiss();
                             Toast.makeText(MainActivity.this, "User registerd" + task.getResult().toString(), Toast.LENGTH_SHORT).show();
 
-                            student.setStudentID(firebaseAuth.getCurrentUser().getUid());
-                            DatabaseReference current_student_db = FirebaseDatabase.getInstance().getReference().child("users").child(student.getStudentID());
-                            current_student_db.setValue(student);
+                            user.setUserID(firebaseAuth.getCurrentUser().getUid());
+                            user.setUserType(2);
+                            DatabaseReference current_student_db = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUserID());
+                            current_student_db.setValue(user);
                             startActivity(new Intent(getApplicationContext(), LoginActivity.class));
                         } else {
                             progressDialog.dismiss();
