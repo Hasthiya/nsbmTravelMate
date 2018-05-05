@@ -6,4 +6,9 @@
     <string name="user_password">password</string>
     <string name="title_activity_driver_map">Map</string>
     <string name="title_activity_bus_locations">Map</string>
+
+    <!--Driver Map Page-->
+    <string name="start_trip_button">START TRIP</string>
+    <string name="stop_trip_button">STOP TRIP</string>
+
 </resources>
