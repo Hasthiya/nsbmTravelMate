@@ -14,4 +14,12 @@
 
     <string name="open">Open</string>
     <string name="close">Close</string>
+
+    <!--time Table Card-->
+    <string name="time_table_title">Bus Time Table</string>
+    <string name="driver_name">Driver Name :</string>
+    <string name="date">Date :</string>
+    <string name="time">Time :</string>
+    <string name="departure_time">Departure Time :</string>
+    <string name="arrival_time">Arrival Time :</string>
 </resources>

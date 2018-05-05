@@ -125,9 +125,9 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
                 switch (menuItem.getItemId()) {
-                    case(R.id.nav_account):
-//                        Intent in = new Intent(getApplicationContext(),MainActivity.class);
-//                        startActivity(in);
+                    case(R.id.nav_time_table):
+                        Intent in = new Intent(getApplicationContext(),TimeTableActivity.class);
+                        startActivity(in);
                         break;
                     case(R.id.nav_logout):
                         logout();
