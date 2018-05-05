@@ -36,7 +36,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         firebaseAuth = FirebaseAuth.getInstance();
         if(firebaseAuth.getCurrentUser() != null){
             finish();
-            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
 
         }
 
@@ -93,7 +93,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                         try {
                             if (task.isSuccessful()) {
                                 finish();
-                                startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+                                startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
                             }
 
                             throw task.getException();

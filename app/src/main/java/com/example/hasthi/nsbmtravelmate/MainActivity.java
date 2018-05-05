@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         user = dataSnapshot.getValue(User.class);
                         if (user.getUserType() == 2) {
                             finish();
-                            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+                            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
                         }
                     }
                 }
