@@ -39,6 +39,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -77,6 +78,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     Boolean mRequestingLocationUpdates;
 
     private GoogleMap mMap;
+    List<Polyline> lines = new ArrayList<>();
+    List<Marker> markers = new ArrayList<>();
 
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
@@ -89,6 +92,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private RouteInfo routeInfo;
     private String driverKey;
     private boolean isTripStarted;
+
+    private FetchUrl fetchUrl;
 
     private DatabaseReference mDatabase;
     private DatabaseReference mRouteDatabase;
@@ -128,8 +133,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                selectedTrip = trips.get(i);
-                updateRouteInfo();
+                if (i > 0) {
+                    selectedTrip = trips.get(i - 1);
+                    updateRouteInfo();
+                }
             }
 
             @Override
@@ -166,7 +173,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mDatabase.orderByChild("driver_id").equalTo(driverKey).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot snapshot: dataSnapshot.getChildren()) {
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Trip trip = snapshot.getValue(Trip.class);
 
                     if (trip != null) {
@@ -178,7 +185,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 if (isTripsAvailable()) {
                     onTripRetrievedSuccess();
                 } else {
-                    Log.wtf(TAG,"Trip Failed");
+                    Log.wtf(TAG, "Trip Failed");
                 }
 
             }
@@ -192,11 +199,13 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
     private void onTripRetrievedSuccess() {
         startMapActivity();
-        updateUI();
+        updateSpinner();
     }
 
-    private void updateUI() {
+    private void updateSpinner() {
         List<String> spinnerArray = new ArrayList<>();
+
+        spinnerArray.add("Select A Route");
 
         for (int x = 0; x < trips.size(); x++) {
             spinnerArray.add(trips.get(x).getKey());
@@ -207,8 +216,9 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void startTrip() {
-        tripButton.setText(R.string.start_trip_button);
+        tripButton.setText(R.string.stop_trip_button);
         isTripStarted = true;
+        spinner.setVisibility(View.INVISIBLE);
 
         startMapActivity();
         loadRouteInMap();
@@ -216,11 +226,34 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void stopTrip() {
-        tripButton.setText(R.string.stop_trip_button);
         isTripStarted = false;
+        tripButton.setText(R.string.start_trip_button);
+        spinner.setVisibility(View.VISIBLE);
+        spinner.setSelection(0);
 
+        clearMap();
+        cancelBackgroundTasks();
         stopMapActivity();
         updateRouteInfo();
+    }
+
+    private void clearMap() {
+        if (lines.size() > 0) {
+            lines.get(0).remove();
+            lines.clear();
+        }
+
+        if (markers.size() > 0) {
+            for (Marker marker : markers) {
+                marker.remove();
+            }
+        }
+    }
+
+    private void cancelBackgroundTasks() {
+        if (fetchUrl != null && fetchUrl.isCancelled()) {
+            fetchUrl.cancel(true);
+        }
     }
 
     private void updateRouteInfo() {
@@ -234,10 +267,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private void loadRouteInMap() {
         // Getting URL to the Google Directions API
         String url = getUrl(selectedTrip.getTrip_starting_point().toLatLng(), selectedTrip.getTrip_ending_point().toLatLng());
-        FetchUrl FetchUrl = new FetchUrl();
+        fetchUrl = new FetchUrl();
 
         // Start downloading json data from Google Directions API
-        FetchUrl.execute(url);
+        fetchUrl.execute(url);
     }
 
     private String getUrl(LatLng origin, LatLng dest) {
@@ -405,13 +438,15 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void addPolyLinesToMap(PolylineOptions lineOptions) {
-        mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_starting_point().toLatLng()));
-        mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_ending_point().toLatLng()));
-        mMap.addPolyline(lineOptions);
+        markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_starting_point().toLatLng())));
+        markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_ending_point().toLatLng())));
+        lines.add(mMap.addPolyline(lineOptions));
     }
 
     // Fetches data from url passed
     private class FetchUrl extends AsyncTask<String, Void, String> {
+
+        ParserTask parserTask;
 
         @Override
         protected String doInBackground(String... url) {
@@ -433,11 +468,29 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
 
-            ParserTask parserTask = new ParserTask();
+            parserTask = new ParserTask();
 
             // Invokes the thread for parsing the JSON data
             parserTask.execute(result);
 
+        }
+
+        @Override
+        protected void onCancelled() {
+            super.onCancelled();
+
+            if (parserTask != null) {
+                parserTask.cancel(true);
+            }
+        }
+
+        @Override
+        protected void onCancelled(String s) {
+            super.onCancelled(s);
+
+            if (parserTask != null) {
+                parserTask.cancel(true);
+            }
         }
 
         private String downloadUrl(String strUrl) throws IOException {
@@ -490,17 +543,17 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
             try {
                 jObject = new JSONObject(jsonData[0]);
-                Log.d("ParserTask",jsonData[0].toString());
+                Log.d("ParserTask", jsonData[0].toString());
                 DataParser parser = new DataParser();
                 Log.d("ParserTask", parser.toString());
 
                 // Starts parsing data
                 routes = parser.parse(jObject);
-                Log.d("ParserTask","Executing routes");
-                Log.d("ParserTask",routes.toString());
+                Log.d("ParserTask", "Executing routes");
+                Log.d("ParserTask", routes.toString());
 
             } catch (Exception e) {
-                Log.d("ParserTask",e.toString());
+                Log.d("ParserTask", e.toString());
                 e.printStackTrace();
             }
             return routes;
@@ -535,16 +588,15 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 lineOptions.width(10);
                 lineOptions.color(Color.RED);
 
-                Log.d("onPostExecute","onPostExecute lineoptions decoded");
+                Log.d("onPostExecute", "onPostExecute lineoptions decoded");
 
             }
 
             // Drawing polyline in the Google Map for the i-th route
-            if(lineOptions != null) {
-               addPolyLinesToMap(lineOptions);
-            }
-            else {
-                Log.d("onPostExecute","without Polylines drawn");
+            if (lineOptions != null) {
+                addPolyLinesToMap(lineOptions);
+            } else {
+                Log.d("onPostExecute", "without Polylines drawn");
             }
         }
     }
