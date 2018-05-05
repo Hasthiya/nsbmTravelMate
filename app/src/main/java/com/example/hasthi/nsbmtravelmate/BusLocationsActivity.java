@@ -29,6 +29,19 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import models.LatLang;
+import models.RouteInfo;
+import models.User;
 
 public class BusLocationsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
@@ -39,9 +52,12 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mToggle;
     private android.support.v7.widget.Toolbar mToolbar;
-
-
+    private DatabaseReference mRouteDatabase;
+    private RouteInfo routeInfo;
+    private MarkerOptions options;
+    private ArrayList<LatLang> latlngs;
     final int LOCATION_REQUEST_CODE = 1;
+    private boolean cameraMoved = false;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -102,6 +118,41 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
             }
         });
 
+        routeInfo = new RouteInfo();
+        options = new MarkerOptions();
+        latlngs = new ArrayList<>();
+        mRouteDatabase = FirebaseDatabase.getInstance().getReference("available_drivers");
+        ValueEventListener postListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.exists()) {
+                    latlngs.clear();
+                    mMap.clear();
+
+                    List<RouteInfo> routeInfoArray = new ArrayList<>();
+                    for (DataSnapshot child: dataSnapshot.getChildren()) {
+                        routeInfoArray.add(child.getValue(RouteInfo.class));
+                    }
+
+                    for(RouteInfo routeInfo : routeInfoArray){
+                        if(routeInfo.getCurrent_location() != null) {
+                            latlngs.add(routeInfo.getCurrent_location());
+                        }
+                    }
+
+                    for (LatLang point : latlngs) {
+                        mMap.addMarker(new MarkerOptions().position(new LatLng(point.getLatitude(), point.getLongitude())));
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mRouteDatabase.addValueEventListener(postListener);
 
     }
 
@@ -152,8 +203,11 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
 
         LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        if(!cameraMoved){
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+            cameraMoved = true;
+        }
     }
 
 
