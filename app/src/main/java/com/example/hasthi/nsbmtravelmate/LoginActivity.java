@@ -17,6 +17,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import models.User;
 
 public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -27,6 +34,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private EditText UserPassword;
     private ProgressDialog progressDialog;
     private FirebaseAuth firebaseAuth;
+    public User user = User.getInstance();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,8 +43,28 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
         firebaseAuth = FirebaseAuth.getInstance();
         if(firebaseAuth.getCurrentUser() != null){
-            finish();
-            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
+
+            user.setUserID(firebaseAuth.getCurrentUser().getUid());
+            DatabaseReference current_user = FirebaseDatabase.getInstance().getReference().child("users").child(firebaseAuth.getCurrentUser().getUid());
+
+            ValueEventListener postListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if(dataSnapshot.exists()) {
+                        user = dataSnapshot.getValue(User.class);
+                        if (user.getUserType() == 2) {
+                            finish();
+                            startActivity(new Intent(getApplicationContext(), BusLocationsActivity.class));
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
+            current_user.addValueEventListener(postListener);
 
         }
 
