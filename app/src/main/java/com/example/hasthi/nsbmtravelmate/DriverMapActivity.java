@@ -199,10 +199,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         List<String> spinnerArray = new ArrayList<>();
 
         for (int x = 0; x < trips.size(); x++) {
-            spinnerArray.add(trips.get(x).driver_id);
+            spinnerArray.add(trips.get(x).getKey());
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerArray);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerArray);
         spinner.setAdapter(adapter);
     }
 
