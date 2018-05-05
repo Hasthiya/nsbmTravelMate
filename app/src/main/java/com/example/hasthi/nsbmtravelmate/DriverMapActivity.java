@@ -42,6 +42,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -104,7 +105,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mSettingsClient = LocationServices.getSettingsClient(this);
         mDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
         mRouteDatabase = FirebaseDatabase.getInstance().getReference("available_drivers");
-        driverKey = getIntent().getStringExtra("DRIVER_KEY");
+        driverKey = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         mRequestingLocationUpdates = true;
 
