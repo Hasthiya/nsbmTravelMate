@@ -60,9 +60,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -114,14 +112,23 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         tripButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isTripsAvailable()) {
-                    selectedTrip = trips.get(0);
+                if (isTripsAvailable() && isTripSelected()) {
                     beginTrip();
                 }
             }
         });
 
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                selectedTrip = trips.get(i);
+            }
 
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
 
         loadTrip();
     }
@@ -156,10 +163,6 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
                     if (trip != null) {
                         trip.setKey(snapshot.getKey());
-
-                        trip.setTrip_starting_point(new LatLang(6.942635, 79.864718));
-                        trip.setTrip_ending_point(new LatLang(6.874161, 79.891023));
-
                         trips.add(trip);
                     }
                 }
@@ -362,6 +365,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 });
     }
 
+    private void addPolyLinesToMap(PolylineOptions lineOptions) {
+        mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_starting_point().toLatLng()));
+        mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_ending_point().toLatLng()));
+        mMap.addPolyline(lineOptions);
+    }
+
     // Fetches data from url passed
     private class FetchUrl extends AsyncTask<String, Void, String> {
 
@@ -493,7 +502,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
             // Drawing polyline in the Google Map for the i-th route
             if(lineOptions != null) {
-                mMap.addPolyline(lineOptions);
+               addPolyLinesToMap(lineOptions);
             }
             else {
                 Log.d("onPostExecute","without Polylines drawn");
