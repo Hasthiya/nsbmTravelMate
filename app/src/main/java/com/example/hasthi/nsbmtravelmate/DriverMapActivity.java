@@ -5,11 +5,9 @@ import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -22,9 +20,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -46,6 +42,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -66,6 +63,7 @@ import java.util.List;
 
 import controllers.DataParser;
 import models.LatLang;
+import models.RouteInfo;
 import models.Trip;
 
 public class DriverMapActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -88,8 +86,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
     private ArrayList<Trip> trips = new ArrayList<>();
     private Trip selectedTrip;
+    private RouteInfo routeInfo;
     private String driverKey;
+    private boolean isTripStarted;
+
     private DatabaseReference mDatabase;
+    private DatabaseReference mRouteDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,7 +104,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mSettingsClient = LocationServices.getSettingsClient(this);
         mDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
-        driverKey = getIntent().getStringExtra("DRIVER_KEY");
+        mRouteDatabase = FirebaseDatabase.getInstance().getReference("available_drivers");
+        driverKey = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         mRequestingLocationUpdates = true;
 
@@ -112,8 +115,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         tripButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isTripsAvailable() && isTripSelected()) {
-                    beginTrip();
+                if (!isTripStarted) {
+                    if (isTripsAvailable() && isTripSelected()) {
+                        startTrip();
+                    }
+                } else {
+                    stopTrip();
                 }
             }
         });
@@ -122,6 +129,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 selectedTrip = trips.get(i);
+                updateRouteInfo();
             }
 
             @Override
@@ -191,23 +199,46 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         List<String> spinnerArray = new ArrayList<>();
 
         for (int x = 0; x < trips.size(); x++) {
-            spinnerArray.add(trips.get(x).driver_id);
+            spinnerArray.add(trips.get(x).getKey());
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerArray);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerArray);
         spinner.setAdapter(adapter);
     }
 
-    private void beginTrip() {
+    private void startTrip() {
+        tripButton.setText(R.string.start_trip_button);
+        isTripStarted = true;
+
+        startMapActivity();
+        loadRouteInMap();
+        updateRouteInfo();
+    }
+
+    private void stopTrip() {
+        tripButton.setText(R.string.stop_trip_button);
+        isTripStarted = false;
+
+        stopMapActivity();
+        updateRouteInfo();
+    }
+
+    private void updateRouteInfo() {
+        routeInfo = new RouteInfo();
+        routeInfo.setDriver_id(driverKey);
+        routeInfo.setDriverAvailable(isTripStarted);
+
+        mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
+    }
+
+    private void loadRouteInMap() {
         // Getting URL to the Google Directions API
         String url = getUrl(selectedTrip.getTrip_starting_point().toLatLng(), selectedTrip.getTrip_ending_point().toLatLng());
-        Log.wtf("onMapClick", url.toString());
         FetchUrl FetchUrl = new FetchUrl();
 
         // Start downloading json data from Google Directions API
         FetchUrl.execute(url);
     }
-
 
     private String getUrl(LatLng origin, LatLng dest) {
         // Origin of route
@@ -232,12 +263,18 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         return super.onCreateView(name, context, attrs);
     }
 
-    public void startMapActivity() {
+    private void startMapActivity() {
         // LocationSettingsRequest objects.
         createLocationCallback();
         createLocationRequest();
         buildLocationSettingsRequest();
         checkLocationUpdate();
+    }
+
+    private void stopMapActivity() {
+        mLocationCallback = null;
+        mLocationRequest = null;
+        mLocationSettingsRequest = null;
     }
 
     Marker busMarker = null;
@@ -262,9 +299,11 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 busMarker.setPosition(new LatLng(latLng.getLatitude(), latLng.getLongitude()));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.getLatitude(), latLng.getLongitude()), 14), 1500, null);
 
-                if (isTripSelected()) {
-                    selectedTrip.setTrip_current_point(latLng);
-                    mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
+                if (isTripSelected() && isTripStarted) {
+//                    selectedTrip.setTrip_current_point(latLng);
+//                    mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
+                    routeInfo.setCurrent_location(latLng);
+                    mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
                 }
             }
         };

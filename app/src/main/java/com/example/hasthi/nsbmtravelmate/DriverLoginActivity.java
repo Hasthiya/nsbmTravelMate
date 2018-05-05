@@ -1,9 +1,11 @@
 package com.example.hasthi.nsbmtravelmate;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -26,6 +28,7 @@ public class DriverLoginActivity extends AppCompatActivity {
     private static final String TAG = "DriverLoginActivity";
     private Button loginButton;
     private EditText emailEditText, passwordEditText;
+    private ProgressDialog progressDialog;
 
     private FirebaseAuth mAuth;
 
@@ -40,6 +43,7 @@ public class DriverLoginActivity extends AppCompatActivity {
         loginButton = findViewById(R.id.login_button);
         emailEditText = findViewById(R.id.driver_email);
         passwordEditText = findViewById(R.id.driver_password);
+        progressDialog = new ProgressDialog(this);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -47,10 +51,23 @@ public class DriverLoginActivity extends AppCompatActivity {
                 final String email = emailEditText.getText().toString().trim();
                 final String password = passwordEditText.getText().toString().trim();
 
+                if (TextUtils.isEmpty(email)) {
+                    emailEditText.setError("Email is Empty");
+                }
+
+                if (TextUtils.isEmpty(password)) {
+                    passwordEditText.setError("Password is Empty");
+                }
+
+                progressDialog.setMessage("Logging Driver");
+                progressDialog.show();
+
                 mAuth.signInWithEmailAndPassword(email,password).addOnCompleteListener(DriverLoginActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
+
                         if (!task.isSuccessful()) {
+                            progressDialog.dismiss();
                             onSigninFailed(task.getException().getMessage());
                         } else {
                             onSigninSuccess();
@@ -64,7 +81,7 @@ public class DriverLoginActivity extends AppCompatActivity {
     private void checkDriverLoggedIn() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", user.getUid()));
+            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class));
         }
     }
 
@@ -75,12 +92,16 @@ public class DriverLoginActivity extends AppCompatActivity {
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                progressDialog.dismiss();
+
                 Long userType = dataSnapshot.child("user_type").getValue(Long.class);
                 onUserTypeReceived(userType);
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
+                progressDialog.dismiss();
+
                 onSigninFailed(databaseError.getMessage());
             }
         });
