@@ -21,6 +21,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import models.Student;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -32,12 +36,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private EditText UserPassword;
     private ProgressDialog progressDialog;
     private FirebaseAuth firebaseAuth;
+    public Student student;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        student = Student.getInstance();
 
         firebaseAuth = FirebaseAuth.getInstance();
         if(firebaseAuth.getCurrentUser() != null){
@@ -81,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void registerUser() {
 
         String email = UserEmail.getText().toString().trim();
+        student.setEmail(email);
         String password = UserPassword.getText().toString().trim();
 
         if(TextUtils.isEmpty(email)){
@@ -106,6 +114,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if(task.isSuccessful()){
                             progressDialog.dismiss();
                             Toast.makeText(MainActivity.this, "User registerd" + task.getResult().toString(), Toast.LENGTH_SHORT).show();
+
+                            student.setStudentID(firebaseAuth.getCurrentUser().getUid());
+                            DatabaseReference current_student_db = FirebaseDatabase.getInstance().getReference().child("users").child(student.getStudentID());
+                            current_student_db.setValue(student);
                             startActivity(new Intent(getApplicationContext(), LoginActivity.class));
                         } else {
                             progressDialog.dismiss();
