@@ -6,24 +6,23 @@ import com.google.firebase.database.Exclude;
  * Created by Hasthi on 5/5/2018.
  */
 
-public class Student {
+public class User {
 
     private String email;
     private String firstName;
     private String LastName;
     private String mobileNumber;
-    private String studentID;
+    private String userID;
+    private int userType;
 
-    private int userType = 2;
+    private static User instance;
 
-    private static Student instance;
-
-    private Student() {
+    private User() {
     }
 
-    public static Student getInstance(){
+    public static User getInstance(){
         if(instance == null){
-            instance = new Student();
+            instance = new User();
         }
         return instance;
     }
@@ -64,12 +63,16 @@ public class Student {
         return userType;
     }
 
-    @Exclude
-    public String getStudentID() {
-        return studentID;
+    public void setUserType(int userType) {
+        this.userType = userType;
     }
 
-    public void setStudentID(String studentID) {
-        this.studentID = studentID;
+    @Exclude
+    public String getUserID() {
+        return userID;
+    }
+
+    public void setUserID(String userID) {
+        this.userID = userID;
     }
 }
