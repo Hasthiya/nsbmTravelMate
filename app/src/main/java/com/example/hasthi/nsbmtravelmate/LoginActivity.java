@@ -34,11 +34,11 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         setContentView(R.layout.activity_login);
 
         firebaseAuth = FirebaseAuth.getInstance();
-        if(firebaseAuth.getCurrentUser() != null){
-            finish();
-            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
-
-        }
+//        if(firebaseAuth.getCurrentUser() != null){
+//            finish();
+//            startActivity(new Intent(getApplicationContext(), BusFinderActivity.class));
+//
+//        }
 
         SignUpPageLink = findViewById(R.id.sign_up_page_link);
         SignUpPageLink.setOnClickListener(this);
