@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     if(dataSnapshot.exists()) {
                         user = dataSnapshot.getValue(User.class);
-                        if (user.getUserType() == 2) {
+                        if (user.getUserType() == 3) {
                             finish();
                             Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             Toast.makeText(MainActivity.this, "User registerd" + task.getResult().toString(), Toast.LENGTH_SHORT).show();
 
                             user.setUserID(firebaseAuth.getCurrentUser().getUid());
-                            user.setUserType(2);
+                            user.setUserType(3);
                             DatabaseReference current_student_db = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUserID());
                             current_student_db.setValue(user);
                             finish();

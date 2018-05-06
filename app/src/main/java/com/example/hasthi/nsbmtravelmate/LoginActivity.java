@@ -52,7 +52,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     if(dataSnapshot.exists()) {
                         user = dataSnapshot.getValue(User.class);
-                        if (user.getUserType() == 2) {
+                        if (user.getUserType() == 3) {
                             finish();
                             Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
