@@ -8,4 +8,5 @@
     <color name="transparent">#00ffffff</color>
 
     <color name="route_color">#f95f0c</color>
+    <color name="bus_route_color">#0027ff</color>
 </resources>

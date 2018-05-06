@@ -8,18 +8,23 @@ import com.google.firebase.database.IgnoreExtraProperties;
 @IgnoreExtraProperties
 public class Trip {
 
-    public String key;
-    public String arrival_time;
-    public String departure_time;
-    public String driver_id;
-    public String driver_name;
-    public String trip_date;
-    public String trip_time;
-    public String trip_progress;
-    public LatLang trip_starting_point;
-    public LatLang trip_ending_point;
-    public LatLang trip_current_point;
-    public String last_updated_time;
+    public final static String TRIP_STATUS_NOT_STARTED = "NOT_STARTED";
+    public final static String TRIP_STATUS_STARTED = "STARTED";
+    public final static String TRIP_STATUS_FINISHED = "FINISHED";
+
+    private String key;
+    private String arrival_time;
+    private String departure_time;
+    private String driver_id;
+    private String driver_name;
+    private String trip_date;
+    private String trip_time;
+    private String trip_progress;
+    private LatLang trip_starting_point;
+    private LatLang trip_ending_point;
+    private LatLang trip_current_point;
+    private String last_updated_time;
+    private String trip_status;
 
     public Trip() {
     }
@@ -118,6 +123,14 @@ public class Trip {
 
     public void setLast_updated_time(String last_updated_time) {
         this.last_updated_time = last_updated_time;
+    }
+
+    public String getTrip_status() {
+        return trip_status;
+    }
+
+    public void setTrip_status(String trip_status) {
+        this.trip_status = trip_status;
     }
 
     @Override
