@@ -10,6 +10,7 @@
     <color name="semi_transparent">#40ffffff</color>
 
     <color name="route_color">#f95f0c</color>
+    <color name="bus_route_color">#0027ff</color>
 
     <color name="hint_color">#70ffffff</color>
     <color name="text_color">#ffffff</color>

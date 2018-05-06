@@ -223,6 +223,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         startMapActivity();
         loadRouteInMap();
         updateRouteInfo();
+        updateTrip();
     }
 
     private void stopTrip() {
@@ -235,6 +236,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         cancelBackgroundTasks();
         stopMapActivity();
         updateRouteInfo();
+        updateTrip();
     }
 
     private void clearMap() {
@@ -262,6 +264,16 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         routeInfo.setDriverAvailable(isTripStarted);
 
         mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
+    }
+
+    private void updateTrip() {
+        if (isTripStarted) {
+            selectedTrip.setTrip_status(Trip.TRIP_STATUS_STARTED);
+        } else {
+            selectedTrip.setTrip_status(Trip.TRIP_STATUS_FINISHED);
+        }
+
+        mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
     }
 
     private void loadRouteInMap() {
@@ -438,6 +450,9 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void addPolyLinesToMap(PolylineOptions lineOptions) {
+        lineOptions.width(10);
+        lineOptions.color(R.color.bus_route_color);
+
         markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_starting_point().toLatLng())));
         markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_ending_point().toLatLng())));
         lines.add(mMap.addPolyline(lineOptions));
@@ -456,10 +471,11 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
             try {
                 // Fetching the data from web service
+                Log.wtf(TAG + "Download URL", url[0]);
                 data = downloadUrl(url[0]);
-                Log.d("Background Task data", data.toString());
+                Log.wtf(TAG + "Background Task data", data.toString());
             } catch (Exception e) {
-                Log.d("Background Task", e.toString());
+                Log.wtf(TAG + "Background Task", e.toString());
             }
             return data;
         }
@@ -519,11 +535,11 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 }
 
                 data = sb.toString();
-                Log.d("downloadUrl", data.toString());
+                Log.wtf(TAG + "downloadUrl", data.toString());
                 br.close();
 
             } catch (Exception e) {
-                Log.d("Exception", e.toString());
+                Log.wtf(TAG + "Exception", e.toString());
             } finally {
                 iStream.close();
                 urlConnection.disconnect();
@@ -585,8 +601,6 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
                 // Adding all the points in the route to LineOptions
                 lineOptions.addAll(points);
-                lineOptions.width(10);
-                lineOptions.color(Color.RED);
 
                 Log.d("onPostExecute", "onPostExecute lineoptions decoded");
 
