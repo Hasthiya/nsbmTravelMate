@@ -217,7 +217,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         spinnerArray.add("Select A Route");
 
         for (int x = 0; x < trips.size(); x++) {
-            spinnerArray.add(trips.get(x).getKey());
+            String name = trips.get(x).getDisplay_name();
+            if (name == null) {
+                name = trips.get(x).getKey();
+            }
+
+            spinnerArray.add(name);
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerArray);
@@ -315,7 +320,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 LatLang latLng = new LatLang(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
                 if (!isMapZoomed) {
                     isMapZoomed = true;
-                    busMarker = mMap.addMarker(new MarkerOptions().position(new LatLng(latLng.getLatitude(), latLng.getLongitude())).title("Marker in Sydney"));
+                    busMarker = mMap.addMarker(new MarkerOptions().position(new LatLng(latLng.getLatitude(), latLng.getLongitude())));
                     busMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.rsz_bus));
                     busMarker.setAnchor(0.5f, 0.5f);
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latLng.getLatitude(), latLng.getLongitude())));
@@ -325,8 +330,6 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.getLatitude(), latLng.getLongitude()), 14), 1500, null);
 
                 if (isTripSelected() && isTripStarted) {
-//                    selectedTrip.setTrip_current_point(latLng);
-//                    mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
                     routeInfo.setCurrent_location(latLng);
                     mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
                 }
