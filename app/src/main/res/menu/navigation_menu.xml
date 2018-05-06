@@ -2,13 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     >
 
-    <item android:id="@+id/nav_account"
-        android:title="My Account"/>
-
     <item android:id="@+id/nav_time_table"
+        android:icon="@drawable/ic_access_time_black_24dp"
         android:title="Time Table"/>
 
     <item android:id="@+id/nav_logout"
+        android:icon="@drawable/ic_person_black_24dp"
         android:title="Logout"/>
 
 </menu>
