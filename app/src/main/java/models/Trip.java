@@ -20,6 +20,7 @@ public class Trip {
     private String trip_date;
     private String trip_time;
     private String trip_progress;
+    private String display_name;
     private LatLang trip_starting_point;
     private LatLang trip_ending_point;
     private LatLang trip_current_point;
@@ -91,6 +92,14 @@ public class Trip {
 
     public void setTrip_progress(String trip_progress) {
         this.trip_progress = trip_progress;
+    }
+
+    public String getDisplay_name() {
+        return display_name;
+    }
+
+    public void setDisplay_name(String display_name) {
+        this.display_name = display_name;
     }
 
     public LatLang getTrip_starting_point() {
