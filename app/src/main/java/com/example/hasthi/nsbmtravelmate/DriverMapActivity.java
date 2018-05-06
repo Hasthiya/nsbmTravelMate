@@ -1,18 +1,21 @@
 package com.example.hasthi.nsbmtravelmate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -55,19 +58,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-import controllers.DataParser;
 import models.LatLang;
 import models.RouteInfo;
 import models.Trip;
@@ -111,6 +104,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mSettingsClient = LocationServices.getSettingsClient(this);
+
+        // DB Reference Setting up
         mDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
         mRouteDatabase = FirebaseDatabase.getInstance().getReference("available_drivers");
         driverKey = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -119,6 +114,18 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         tripButton = findViewById(R.id.tripButton);
         spinner = findViewById(R.id.spinner);
+
+        Toolbar toolbar = findViewById(R.id.map_action_bar);
+        toolbar.inflateMenu(R.menu.map_menu);
+        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                FirebaseAuth.getInstance().signOut();
+                finish();
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                return true;
+            }
+        });
 
         tripButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -152,6 +159,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.map_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (isTripSelected()) {
@@ -178,6 +191,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         return trips.size() > 0;
     }
 
+    // Download Trip Details from Server [ TimeTable ]
     private void loadTrip() {
         mDatabase.orderByChild("driver_id").equalTo(driverKey).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -194,7 +208,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 if (isTripsAvailable()) {
                     onTripRetrievedSuccess();
                 } else {
-                    Log.wtf(TAG, "Trip Failed");
+                    showToast("No Trips Available");
                 }
 
             }
@@ -202,6 +216,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.wtf(TAG, ">>>>>>On Cancelled");
+                showToast("Something Went Wrong Try Again");
             }
         });
     }
@@ -211,15 +226,16 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         updateSpinner();
     }
 
+    // Setting up route selection
     private void updateSpinner() {
         List<String> spinnerArray = new ArrayList<>();
 
         spinnerArray.add("Select A Route");
 
-        for (int x = 0; x < trips.size(); x++) {
-            String name = trips.get(x).getDisplay_name();
+        for (Trip trip : trips) {
+            String name = trip.getDisplay_name();
             if (name == null) {
-                name = trips.get(x).getKey();
+                name = trip.getKey();
             }
 
             spinnerArray.add(name);
@@ -265,6 +281,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         markers.clear();
     }
 
+    // Update Driver Availability & Current Location
     private void updateRouteInfo() {
         routeInfo = new RouteInfo();
         routeInfo.setDriver_id(driverKey);
@@ -273,6 +290,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
     }
 
+     // Update Trip Info
     private void updateTrip() {
         if (isTripStarted) {
             selectedTrip.setTrip_status(Trip.TRIP_STATUS_STARTED);
@@ -283,6 +301,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
     }
 
+    // Requesting Coordinates between two Location
     private void loadRouteInMap() {
         Routing routing = new Routing.Builder()
                 .travelMode(AbstractRouting.TravelMode.DRIVING)
@@ -293,6 +312,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         routing.execute();
     }
 
+    // Setting Up Map Callbacks & Settings
     private void startMapActivity() {
         // LocationSettingsRequest objects.
         createLocationCallback();
@@ -301,6 +321,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         checkLocationUpdate();
     }
 
+    // Stop Map Callbacks & Settings
     private void stopMapActivity() {
         mLocationCallback = null;
         mLocationRequest = null;
@@ -318,6 +339,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
                 Location mCurrentLocation = locationResult.getLastLocation();
                 LatLang latLng = new LatLang(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+                // Zoom to Current Location For First Time & Setting Up Marker
                 if (!isMapZoomed) {
                     isMapZoomed = true;
                     busMarker = mMap.addMarker(new MarkerOptions().position(new LatLng(latLng.getLatitude(), latLng.getLongitude())));
@@ -329,6 +352,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 busMarker.setPosition(new LatLng(latLng.getLatitude(), latLng.getLongitude()));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.getLatitude(), latLng.getLongitude()), 14), 1500, null);
 
+                // Updating Current Location
                 if (isTripSelected() && isTripStarted) {
                     routeInfo.setCurrent_location(latLng);
                     mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
@@ -364,6 +388,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         return permissionState == PackageManager.PERMISSION_GRANTED;
     }
 
+    // Permission to use gps location
     private void requestPermissions() {
             Log.i(TAG, "Requesting permission");
             ActivityCompat.requestPermissions(DriverMapActivity.this,
@@ -397,6 +422,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                                     ResolvableApiException rae = (ResolvableApiException) e;
                                     rae.startResolutionForResult(DriverMapActivity.this, 0x1);
                                 } catch (IntentSender.SendIntentException sie) {
+                                    showToast("PendingIntent unable to execute request.");
                                     Log.i(TAG, "PendingIntent unable to execute request.");
                                 }
                                 break;
@@ -404,13 +430,13 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                                 String errorMessage = "Location settings are inadequate, and cannot be " +
                                         "fixed here. Fix in Settings.";
                                 Log.e(TAG, errorMessage);
-                                Toast.makeText(DriverMapActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-//                                mRequestingLocationUpdates = false;
+                                showToast(errorMessage);
                         }
                     }
                 });
     }
 
+    // Add Route to Map
     private void addPolyLinesToMap(PolylineOptions lineOptions) {
         lineOptions.width(10);
         lineOptions.color(Color.RED);

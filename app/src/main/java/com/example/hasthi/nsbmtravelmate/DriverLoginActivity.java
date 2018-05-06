@@ -51,6 +51,7 @@ public class DriverLoginActivity extends AppCompatActivity {
                 final String email = emailEditText.getText().toString().trim();
                 final String password = passwordEditText.getText().toString().trim();
 
+                // Validation
                 if (TextUtils.isEmpty(email)) {
                     emailEditText.setError("Email is Empty");
                 }
@@ -65,7 +66,6 @@ public class DriverLoginActivity extends AppCompatActivity {
                 mAuth.signInWithEmailAndPassword(email,password).addOnCompleteListener(DriverLoginActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-
                         if (!task.isSuccessful()) {
                             progressDialog.dismiss();
                             onSigninFailed(task.getException().getMessage());
@@ -88,6 +88,7 @@ public class DriverLoginActivity extends AppCompatActivity {
     private void onSigninSuccess() {
         String key = mAuth.getCurrentUser().getUid();
 
+        // Check User Type is Driver and Allows Login
         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(key);
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -101,21 +102,22 @@ public class DriverLoginActivity extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 progressDialog.dismiss();
-
                 onSigninFailed(databaseError.getMessage());
             }
         });
     }
 
     private void onSigninFailed(String message) {
+        FirebaseAuth.getInstance().signOut();
         Toast.makeText(DriverLoginActivity.this, message, Toast.LENGTH_SHORT).show();
         Log.e(TAG, message);
     }
 
+    // Check User Type
     private void onUserTypeReceived(long type) {
         if (type == 2) {
             finish();
-            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class).putExtra("DRIVER_KEY", mAuth.getCurrentUser().getUid()));
+            startActivity(new Intent(getApplicationContext(), DriverMapActivity.class));
         } else {
             onSigninFailed("Invalid User");
         }
