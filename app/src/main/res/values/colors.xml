@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorPrimary">#25ad16</color>
+    <color name="colorPrimaryDark">#1d8711</color>
+    <color name="colorAccent">#2356bc</color>
     <color name="navigation_header_text_color">#ffffff</color>
 
     <color name="transparent">#00ffffff</color>
 
+    <color name="semi_transparent">#40ffffff</color>
+
     <color name="route_color">#f95f0c</color>
+
+    <color name="hint_color">#70ffffff</color>
+    <color name="text_color">#ffffff</color>
 </resources>

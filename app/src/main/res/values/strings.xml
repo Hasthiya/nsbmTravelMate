@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">nsbmTravelMate</string>
+    <string name="app_name">NSBM TravelMate</string>
 
     <!--User Registration page-->
     <string name="user_email">e-mail</string>
@@ -22,4 +22,9 @@
     <string name="time">Time :</string>
     <string name="departure_time">Departure Time :</string>
     <string name="arrival_time">Arrival Time :</string>
+
+    <!--sign in-->
+    <string name="login_link_text">Already have an account?</string>
+    <!--login-->
+    <string name="sign_up_link_text">Don\'t have an account?</string>
 </resources>

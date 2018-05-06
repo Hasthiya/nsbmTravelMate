@@ -6,7 +6,14 @@
     android:layout_height="match_parent"
     tools:context="com.example.hasthi.nsbmtravelmate.LoginActivity">
 
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/login"/>
+
     <LinearLayout
+        android:layout_marginTop="20dp"
         android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -20,27 +27,36 @@
             android:hint="@string/user_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"/>
+            android:layout_margin="5dp"
+            android:textColorHint="@color/hint_color"
+            android:textColor="@color/text_color"/>
 
         <EditText
             android:id="@+id/user_password"
             android:hint="@string/user_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"/>
+            android:layout_margin="5dp"
+            android:textColorHint="@color/hint_color"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:id="@+id/login_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/semi_transparent"
+            android:textColor="@color/text_color"
             android:text="Login"
             android:layout_margin="5dp"/>
 
         <TextView
+            android:layout_marginTop="20dp"
             android:id="@+id/sign_up_page_link"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SignUp" />
+            android:layout_gravity="center"
+            android:textColor="@color/text_color"
+            android:text="@string/sign_up_link_text" />
 
     </LinearLayout>
 

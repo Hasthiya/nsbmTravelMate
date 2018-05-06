@@ -4,9 +4,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.hasthi.nsbmtravelmate.MainActivity">
+    tools:context="com.example.hasthi.nsbmtravelmate.MainActivity"
+    >
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/signup"/>
 
     <LinearLayout
+        android:layout_marginTop="20dp"
         android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -20,27 +28,36 @@
         android:hint="@string/user_email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"/>
+        android:layout_margin="5dp"
+        android:textColorHint="@color/hint_color"
+        android:textColor="@color/text_color"/>
 
     <EditText
         android:id="@+id/user_password"
         android:hint="@string/user_password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"/>
+        android:layout_margin="5dp"
+        android:textColorHint="@color/hint_color"
+        android:textColor="@color/text_color"/>
 
     <Button
         android:id="@+id/sign_up_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/semi_transparent"
+        android:textColor="@color/text_color"
         android:text="Sign Up"
         android:layout_margin="5dp"/>
 
     <TextView
+        android:layout_marginTop="20dp"
         android:id="@+id/login_page_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Login" />
+        android:layout_gravity="center"
+        android:textColor="@color/text_color"
+        android:text="@string/login_link_text" />
 
     </LinearLayout>
 
@@ -48,6 +65,7 @@
         android:id="@+id/driver_login_page_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@color/text_color"
         android:text="Login as a Driver"
         android:padding="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
