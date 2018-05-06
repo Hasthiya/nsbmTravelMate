@@ -104,6 +104,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mSettingsClient = LocationServices.getSettingsClient(this);
+
+        // DB Reference Setting up
         mDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
         mRouteDatabase = FirebaseDatabase.getInstance().getReference("available_drivers");
         driverKey = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -189,6 +191,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         return trips.size() > 0;
     }
 
+    // Download Trip Details from Server [ TimeTable ]
     private void loadTrip() {
         mDatabase.orderByChild("driver_id").equalTo(driverKey).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -205,7 +208,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 if (isTripsAvailable()) {
                     onTripRetrievedSuccess();
                 } else {
-                    Log.wtf(TAG, "Trip Failed");
+                    showToast("No Trips Available");
                 }
 
             }
@@ -213,6 +216,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.wtf(TAG, ">>>>>>On Cancelled");
+                showToast("Something Went Wrong Try Again");
             }
         });
     }
@@ -222,6 +226,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         updateSpinner();
     }
 
+    // Setting up route selection
     private void updateSpinner() {
         List<String> spinnerArray = new ArrayList<>();
 
@@ -276,6 +281,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         markers.clear();
     }
 
+    // Update Driver Availability & Current Location
     private void updateRouteInfo() {
         routeInfo = new RouteInfo();
         routeInfo.setDriver_id(driverKey);
@@ -284,6 +290,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
     }
 
+     // Update Trip Info
     private void updateTrip() {
         if (isTripStarted) {
             selectedTrip.setTrip_status(Trip.TRIP_STATUS_STARTED);
@@ -294,6 +301,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         mDatabase.child(selectedTrip.getKey()).setValue(selectedTrip);
     }
 
+    // Requesting Coordinates between two Location
     private void loadRouteInMap() {
         Routing routing = new Routing.Builder()
                 .travelMode(AbstractRouting.TravelMode.DRIVING)
@@ -304,6 +312,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         routing.execute();
     }
 
+    // Setting Up Map Callbacks & Settings
     private void startMapActivity() {
         // LocationSettingsRequest objects.
         createLocationCallback();
@@ -312,6 +321,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         checkLocationUpdate();
     }
 
+    // Stop Map Callbacks & Settings
     private void stopMapActivity() {
         mLocationCallback = null;
         mLocationRequest = null;
@@ -329,6 +339,8 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
                 Location mCurrentLocation = locationResult.getLastLocation();
                 LatLang latLng = new LatLang(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+                // Zoom to Current Location For First Time & Setting Up Marker
                 if (!isMapZoomed) {
                     isMapZoomed = true;
                     busMarker = mMap.addMarker(new MarkerOptions().position(new LatLng(latLng.getLatitude(), latLng.getLongitude())));
@@ -340,6 +352,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                 busMarker.setPosition(new LatLng(latLng.getLatitude(), latLng.getLongitude()));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latLng.getLatitude(), latLng.getLongitude()), 14), 1500, null);
 
+                // Updating Current Location
                 if (isTripSelected() && isTripStarted) {
                     routeInfo.setCurrent_location(latLng);
                     mRouteDatabase.child(selectedTrip.getKey()).setValue(routeInfo);
@@ -375,6 +388,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         return permissionState == PackageManager.PERMISSION_GRANTED;
     }
 
+    // Permission to use gps location
     private void requestPermissions() {
             Log.i(TAG, "Requesting permission");
             ActivityCompat.requestPermissions(DriverMapActivity.this,
@@ -408,6 +422,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                                     ResolvableApiException rae = (ResolvableApiException) e;
                                     rae.startResolutionForResult(DriverMapActivity.this, 0x1);
                                 } catch (IntentSender.SendIntentException sie) {
+                                    showToast("PendingIntent unable to execute request.");
                                     Log.i(TAG, "PendingIntent unable to execute request.");
                                 }
                                 break;
@@ -415,13 +430,13 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                                 String errorMessage = "Location settings are inadequate, and cannot be " +
                                         "fixed here. Fix in Settings.";
                                 Log.e(TAG, errorMessage);
-                                Toast.makeText(DriverMapActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-//                                mRequestingLocationUpdates = false;
+                                showToast(errorMessage);
                         }
                     }
                 });
     }
 
+    // Add Route to Map
     private void addPolyLinesToMap(PolylineOptions lineOptions) {
         lineOptions.width(10);
         lineOptions.color(Color.RED);
