@@ -122,22 +122,55 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
                         try {
                             if (task.isSuccessful()) {
-                                finish();
-                                Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
+                                onSigninSuccess();
                             }
 
                             throw task.getException();
                         }
 
                         catch(Exception e) {
-                            Toast.makeText(LoginActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, e.getMessage());
+//                            Toast.makeText(LoginActivity.this, "Login failed", Toast.LENGTH_SHORT).show();
+//                            Log.e(TAG, e.getMessage());
                         }
 
                     }
                 });
 
     }
+
+    private void onSigninSuccess() {
+        String key = firebaseAuth.getCurrentUser().getUid();
+
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(key);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                progressDialog.dismiss();
+
+                if(dataSnapshot.exists()) {
+                    user = dataSnapshot.getValue(User.class);
+                    if (user.getUserType() == 3) {
+                        finish();
+                        Intent intent = new Intent(getApplicationContext(), BusLocationsActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Login failed", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                progressDialog.dismiss();
+
+                onSigninFailed("Wrong user type");
+            }
+        });
+    }
+    private void onSigninFailed(String message) {
+        Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+        Log.e(TAG, message);
+    }
+
 }

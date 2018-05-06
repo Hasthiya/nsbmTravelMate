@@ -189,7 +189,9 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
                         if (trip != null) {
                             trips.add(trip);
                             if(trip.getTrip_starting_point() != null && trip.getTrip_ending_point() != null) {
-                                getRouteToMarker(trip.getTrip_starting_point().toLatLng(), trip.getTrip_ending_point().toLatLng());
+                                if(trip.getTrip_status() != null && trip.getTrip_status().equalsIgnoreCase(Trip.TRIP_STATUS_STARTED)) {
+                                    getRouteToMarker(trip.getTrip_starting_point().toLatLng(), trip.getTrip_ending_point().toLatLng());
+                                }
                             }
                         }
 
