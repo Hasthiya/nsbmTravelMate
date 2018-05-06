@@ -103,7 +103,7 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
         mToggle.syncState();
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
+        //getting permission
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
                 PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) !=
@@ -120,7 +120,7 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
         }
 
         NavigationView nv = findViewById(R.id.nv1);
-
+        //navigation menu
         nv.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
@@ -136,7 +136,7 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
                 return true;
             }
         });
-
+        //drawing routes
         routeInfo = new RouteInfo();
         options = new MarkerOptions();
         latlngs = new ArrayList<>();
@@ -175,7 +175,7 @@ public class BusLocationsActivity extends AppCompatActivity implements OnMapRead
         mRouteDatabase.addValueEventListener(postListener);
 
         trips = new ArrayList<>();
-
+        //getting time table information
         mTimeTableDatabase = FirebaseDatabase.getInstance().getReference("timeTable");
         ValueEventListener postListener2 = new ValueEventListener() {
             @Override
