@@ -20,6 +20,11 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.directions.route.AbstractRouting;
+import com.directions.route.Route;
+import com.directions.route.RouteException;
+import com.directions.route.Routing;
+import com.directions.route.RoutingListener;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -67,7 +72,7 @@ import models.LatLang;
 import models.RouteInfo;
 import models.Trip;
 
-public class DriverMapActivity extends FragmentActivity implements OnMapReadyCallback {
+public class DriverMapActivity extends FragmentActivity implements OnMapReadyCallback, RoutingListener {
 
     private static final String TAG = ">>>>";
 
@@ -75,11 +80,11 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private Spinner spinner;
 
     private Context thisContext;
-    Boolean mRequestingLocationUpdates;
+    private Boolean mRequestingLocationUpdates;
 
     private GoogleMap mMap;
-    List<Polyline> lines = new ArrayList<>();
-    List<Marker> markers = new ArrayList<>();
+    private List<Polyline> lines = new ArrayList<>();
+    private List<Marker> markers = new ArrayList<>();
 
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
@@ -92,8 +97,6 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private RouteInfo routeInfo;
     private String driverKey;
     private boolean isTripStarted;
-
-    private FetchUrl fetchUrl;
 
     private DatabaseReference mDatabase;
     private DatabaseReference mRouteDatabase;
@@ -148,14 +151,6 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         loadTrip();
     }
 
-    private Boolean isTripSelected() {
-        return selectedTrip != null;
-    }
-
-    private Boolean isTripsAvailable() {
-        return trips.size() > 0;
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -165,8 +160,22 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     @Override
+    public View onCreateView(String name, Context context, AttributeSet attrs) {
+        thisContext = context;
+        return super.onCreateView(name, context, attrs);
+    }
+
+    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+    }
+
+    private Boolean isTripSelected() {
+        return selectedTrip != null;
+    }
+
+    private Boolean isTripsAvailable() {
+        return trips.size() > 0;
     }
 
     private void loadTrip() {
@@ -233,29 +242,22 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         spinner.setSelection(0);
 
         clearMap();
-        cancelBackgroundTasks();
         stopMapActivity();
         updateRouteInfo();
         updateTrip();
     }
 
     private void clearMap() {
-        if (lines.size() > 0) {
-            lines.get(0).remove();
-            lines.clear();
+        for (Polyline line : lines) {
+            line.remove();
         }
 
-        if (markers.size() > 0) {
-            for (Marker marker : markers) {
-                marker.remove();
-            }
+        for (Marker marker : markers) {
+            marker.remove();
         }
-    }
 
-    private void cancelBackgroundTasks() {
-        if (fetchUrl != null && fetchUrl.isCancelled()) {
-            fetchUrl.cancel(true);
-        }
+        lines.clear();
+        markers.clear();
     }
 
     private void updateRouteInfo() {
@@ -277,35 +279,13 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void loadRouteInMap() {
-        // Getting URL to the Google Directions API
-        String url = getUrl(selectedTrip.getTrip_starting_point().toLatLng(), selectedTrip.getTrip_ending_point().toLatLng());
-        fetchUrl = new FetchUrl();
-
-        // Start downloading json data from Google Directions API
-        fetchUrl.execute(url);
-    }
-
-    private String getUrl(LatLng origin, LatLng dest) {
-        // Origin of route
-        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-        // Destination of route
-        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
-        // Sensor enabled
-        String sensor = "sensor=false";
-        // Building the parameters to the web service
-        String parameters = str_origin + "&" + str_dest + "&" + sensor;
-        // Output format
-        String output = "json";
-        // Building the url to the web service
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
-
-        return url;
-    }
-
-    @Override
-    public View onCreateView(String name, Context context, AttributeSet attrs) {
-        thisContext = context;
-        return super.onCreateView(name, context, attrs);
+        Routing routing = new Routing.Builder()
+                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .withListener(this)
+                .alternativeRoutes(false)
+                .waypoints(selectedTrip.getTrip_starting_point().toLatLng(), selectedTrip.getTrip_ending_point().toLatLng())
+                .build();
+        routing.execute();
     }
 
     private void startMapActivity() {
@@ -382,31 +362,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     }
 
     private void requestPermissions() {
-        boolean shouldProvideRationale =
-                ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION);
-
-        // Provide an additional rationale to the user. This would happen if the user denied the
-        // request previously, but didn't check the "Don't ask again" checkbox.
-        if (shouldProvideRationale) {
-            Log.i(TAG, "Displaying permission rationale to provide additional context.");
-            //TODO Display Error Message
-//            showSnackbar("Location Permission",
-//                    "Ok", new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View view) {
-//                            // Request permission
-//                            ActivityCompat.requestPermissions(MapsActivity.this,
-//                                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-//                                    REQUEST_PERMISSIONS_REQUEST_CODE);
-//                        }
-//                    });
-        } else {
             Log.i(TAG, "Requesting permission");
             ActivityCompat.requestPermissions(DriverMapActivity.this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     34);
-        }
     }
 
     private void startLocationUpdates() {
@@ -451,168 +410,41 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
     private void addPolyLinesToMap(PolylineOptions lineOptions) {
         lineOptions.width(10);
-        lineOptions.color(R.color.bus_route_color);
+        lineOptions.color(Color.RED);
 
         markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_starting_point().toLatLng())));
         markers.add(mMap.addMarker(new MarkerOptions().position(selectedTrip.getTrip_ending_point().toLatLng())));
         lines.add(mMap.addPolyline(lineOptions));
     }
 
-    // Fetches data from url passed
-    private class FetchUrl extends AsyncTask<String, Void, String> {
+    private void showToast(String message) {
+        Toast.makeText(thisContext, message, Toast.LENGTH_LONG).show();
+    }
 
-        ParserTask parserTask;
-
-        @Override
-        protected String doInBackground(String... url) {
-
-            // For storing data from web service
-            String data = "";
-
-            try {
-                // Fetching the data from web service
-                Log.wtf(TAG + "Download URL", url[0]);
-                data = downloadUrl(url[0]);
-                Log.wtf(TAG + "Background Task data", data.toString());
-            } catch (Exception e) {
-                Log.wtf(TAG + "Background Task", e.toString());
-            }
-            return data;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-            parserTask = new ParserTask();
-
-            // Invokes the thread for parsing the JSON data
-            parserTask.execute(result);
-
-        }
-
-        @Override
-        protected void onCancelled() {
-            super.onCancelled();
-
-            if (parserTask != null) {
-                parserTask.cancel(true);
-            }
-        }
-
-        @Override
-        protected void onCancelled(String s) {
-            super.onCancelled(s);
-
-            if (parserTask != null) {
-                parserTask.cancel(true);
-            }
-        }
-
-        private String downloadUrl(String strUrl) throws IOException {
-            String data = "";
-            InputStream iStream = null;
-            HttpURLConnection urlConnection = null;
-            try {
-                URL url = new URL(strUrl);
-
-                // Creating an http connection to communicate with url
-                urlConnection = (HttpURLConnection) url.openConnection();
-
-                // Connecting to url
-                urlConnection.connect();
-
-                // Reading data from url
-                iStream = urlConnection.getInputStream();
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
-                StringBuffer sb = new StringBuffer();
-
-                String line = "";
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-
-                data = sb.toString();
-                Log.wtf(TAG + "downloadUrl", data.toString());
-                br.close();
-
-            } catch (Exception e) {
-                Log.wtf(TAG + "Exception", e.toString());
-            } finally {
-                iStream.close();
-                urlConnection.disconnect();
-            }
-            return data;
+    @Override
+    public void onRoutingFailure(RouteException e) {
+        if(e != null){
+            showToast("Error " + e.getMessage());
+        } else {
+            showToast("Something Went Wrong Try Again");
         }
     }
 
-    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
+    @Override
+    public void onRoutingStart() {
 
-        // Parsing the data in non-ui thread
-        @Override
-        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
+    }
 
-            JSONObject jObject;
-            List<List<HashMap<String, String>>> routes = null;
+    @Override
+    public void onRoutingSuccess(ArrayList<Route> arrayList, int i) {
+        PolylineOptions polylineOptions = new PolylineOptions();
+        polylineOptions.addAll(arrayList.get(0).getPoints());
+        addPolyLinesToMap(polylineOptions);
+    }
 
-            try {
-                jObject = new JSONObject(jsonData[0]);
-                Log.d("ParserTask", jsonData[0].toString());
-                DataParser parser = new DataParser();
-                Log.d("ParserTask", parser.toString());
+    @Override
+    public void onRoutingCancelled() {
 
-                // Starts parsing data
-                routes = parser.parse(jObject);
-                Log.d("ParserTask", "Executing routes");
-                Log.d("ParserTask", routes.toString());
-
-            } catch (Exception e) {
-                Log.d("ParserTask", e.toString());
-                e.printStackTrace();
-            }
-            return routes;
-        }
-
-        @Override
-        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
-            ArrayList<LatLng> points;
-            PolylineOptions lineOptions = null;
-
-            // Traversing through all the routes
-            for (int i = 0; i < result.size(); i++) {
-                points = new ArrayList<>();
-                lineOptions = new PolylineOptions();
-
-                // Fetching i-th route
-                List<HashMap<String, String>> path = result.get(i);
-
-                // Fetching all the points in i-th route
-                for (int j = 0; j < path.size(); j++) {
-                    HashMap<String, String> point = path.get(j);
-
-                    double lat = Double.parseDouble(point.get("lat"));
-                    double lng = Double.parseDouble(point.get("lng"));
-                    LatLng position = new LatLng(lat, lng);
-
-                    points.add(position);
-                }
-
-                // Adding all the points in the route to LineOptions
-                lineOptions.addAll(points);
-
-                Log.d("onPostExecute", "onPostExecute lineoptions decoded");
-
-            }
-
-            // Drawing polyline in the Google Map for the i-th route
-            if (lineOptions != null) {
-                addPolyLinesToMap(lineOptions);
-            } else {
-                Log.d("onPostExecute", "without Polylines drawn");
-            }
-        }
     }
 
 }
