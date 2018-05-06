@@ -1,18 +1,21 @@
 package com.example.hasthi.nsbmtravelmate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -55,19 +58,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-import controllers.DataParser;
 import models.LatLang;
 import models.RouteInfo;
 import models.Trip;
@@ -120,6 +113,18 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         tripButton = findViewById(R.id.tripButton);
         spinner = findViewById(R.id.spinner);
 
+        Toolbar toolbar = findViewById(R.id.map_action_bar);
+        toolbar.inflateMenu(R.menu.map_menu);
+        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                FirebaseAuth.getInstance().signOut();
+                finish();
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                return true;
+            }
+        });
+
         tripButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -149,6 +154,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         });
 
         loadTrip();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.map_menu, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -216,10 +227,10 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         spinnerArray.add("Select A Route");
 
-        for (int x = 0; x < trips.size(); x++) {
-            String name = trips.get(x).getDisplay_name();
+        for (Trip trip : trips) {
+            String name = trip.getDisplay_name();
             if (name == null) {
-                name = trips.get(x).getKey();
+                name = trip.getKey();
             }
 
             spinnerArray.add(name);
